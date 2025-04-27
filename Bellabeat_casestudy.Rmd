@@ -1,0 +1,113 @@
+---
+title: "Bellabeat Case Study"
+author: "Lidiya Arsova"
+date: "2025-04-13"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+```
+
+## Ask
+
+Bellabeat is a high-tech wellness company that manufactures health-focused smart devices for women. The goal of this project is to analyze Fitbit data and uncover user trends that Bellabeat can use to inform its marketing strategy.
+
+## Prepare
+
+We are working with public Fitbit data collected from 30 users over two months, shared under a public domain license via Kaggle and Zenodo.
+
+We are using two daily activity files — one from each month — and will combine them.
+
+```{r}
+daily1 <- read_csv("dailyActivity_merged.csv")
+daily2 <- read_csv("dailyActivity_merged2.csv")
+```
+
+## Process
+
+Here, we combine the two datasets, remove any duplicates, and convert the activity date column into proper Date format.
+
+```{r}
+daily_full <- bind_rows(daily1, daily2) %>%
+  distinct() %>%
+  mutate(ActivityDate = mdy(ActivityDate))
+```
+## Analyze
+
+We calculate summary statistics to understand users' daily activity patterns.
+
+```{r}
+daily_full %>%
+  summarise(
+    avg_steps = mean(TotalSteps, na.rm = TRUE),
+    avg_calories = mean(Calories, na.rm = TRUE),
+    avg_very_active = mean(VeryActiveMinutes, na.rm = TRUE),
+    avg_lightly_active = mean(LightlyActiveMinutes, na.rm = TRUE),
+    avg_sedentary = mean(SedentaryMinutes, na.rm = TRUE)
+  )
+```
+
+We also explore how different activities correlate with calories burned.
+
+```{r}
+cor_data <- daily_full %>%
+  select(TotalSteps, TotalDistance, VeryActiveMinutes, FairlyActiveMinutes,
+         LightlyActiveMinutes, SedentaryMinutes, Calories)
+
+cor(cor_data, use = "complete.obs")
+```
+
+## Share
+
+### Average Calories Burned by Activity Level
+
+```{r}
+daily_full %>%
+  pivot_longer(cols = c(VeryActiveMinutes, FairlyActiveMinutes, LightlyActiveMinutes),
+               names_to = "ActivityLevel", values_to = "Minutes") %>%
+  group_by(ActivityLevel) %>%
+  summarise(AvgCalories = mean(Calories, na.rm = TRUE)) %>%
+  ggplot(aes(x = ActivityLevel, y = AvgCalories, fill = ActivityLevel)) +
+  geom_col() +
+  labs(title = "Avg Calories Burned by Activity Level", y = "Calories", x = "Activity Level") +
+  theme_minimal()
+```
+
+### Average Steps by Weekday
+
+```{r}
+daily_full %>%
+  mutate(Weekday = wday(ActivityDate, label = TRUE)) %>%
+  group_by(Weekday) %>%
+  summarise(AverageSteps = mean(TotalSteps, na.rm = TRUE)) %>%
+  ggplot(aes(x = Weekday, y = AverageSteps)) +
+  geom_col(fill = "steelblue") +
+  labs(title = "Average Steps by Weekday", x = "Day of Week", y = "Steps") +
+  theme_minimal()
+```
+## Act
+
+Based on this analysis, Bellabeat could take the following actions:
+
+Encourage High-Intensity Movement:
+Very Active Minutes had a strong correlation with calories burned. Bellabeat can promote workouts that drive this metric.
+
+Target Weekday Engagement:
+Most users are more active during weekdays. Bellabeat can use this insight to drive weekday-focused campaigns.
+
+Combat Sedentary Behavior:
+Sedentary minutes are still high. Bellabeat can add movement reminders or gentle nudge notifications via smart devices.
+
+## Conclusion
+
+This project explored user activity data to generate business insights for Bellabeat. Using R and tidyverse, we cleaned and analyzed the data, created visualizations, and delivered actionable recommendations for smarter engagement strategies.
+
+
+
+
